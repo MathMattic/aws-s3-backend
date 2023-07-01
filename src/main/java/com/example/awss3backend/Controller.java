@@ -1,6 +1,9 @@
 package com.example.awss3backend;
 
+import com.example.awss3backend.repositories.ObjectRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,6 +13,9 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
+import java.lang.reflect.Array;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -20,46 +26,39 @@ public class Controller {
     @Value("${BUCKET}")
     private String bucket;
 
+    @Autowired
+    private ObjectRepository ObjectRepository;
+
 
     @GetMapping("/")
-    public void get() {
+    public ResponseEntity<List<BucketObject>> listBucketObjects() {
 
+        ProfileCredentialsProvider credentialsProvider = ProfileCredentialsProvider.builder().profileName("default").build();
+//        ProfileCredentialsProvider credentialsProvider = ProfileCredentialsProvider.create();
 
-//        ProfileCredentialsProvider cp = ProfileCredentialsProvider.builder().profileName("default").build();
-        ProfileCredentialsProvider credentialsProvider = ProfileCredentialsProvider.create();
-        Region region = Region.US_EAST_1;
-
-        S3Client s3 = S3Client.builder()
-                .credentialsProvider(credentialsProvider)
-                .region(region)
-                .build();
+        S3Client s3 = S3Client.builder().credentialsProvider(credentialsProvider).region(Region.US_EAST_1).build();
 
         ListObjectsV2Request listObjects = ListObjectsV2Request
                 .builder()
                 .bucket(bucket)
                 .build();
 
-//        s3.listObjects(listObjects).contents().stream().forEach(x -> System.out.println(x.key()));
-
         ListObjectsV2Response res = s3.listObjectsV2(listObjects);
-        List<S3Object> objects = res.contents();
+        List<S3Object> s3objects = res.contents();
 
-//        URL url = s3.utilities().getUrl(GetUrlRequest.builder().bucket(bucket).key().build());
+        List<BucketObject> bucketObjects = new ArrayList<>();
+        for (S3Object objectInfo : s3objects) {
 
+            HeadObjectRequest headObjectRequest  = HeadObjectRequest.builder().bucket(bucket).key(objectInfo.key()).build();
+            HeadObjectResponse headObjectResponse = s3.headObject(headObjectRequest);
 
-        for (S3Object myValue : objects) {
-            System.out.println(myValue.key() + " " + myValue.size() + " " + myValue.lastModified());
+            bucketObjects.add(new BucketObject(objectInfo.key(), objectInfo.size(), objectInfo.lastModified().toString(), headObjectResponse.contentType()));
+
+            ObjectRepository.saveAll(bucketObjects);
         }
 
-        // GetContentType
-        HeadObjectRequest headObjectRequest  = HeadObjectRequest.builder()
-                .bucket(bucket)
-                .key("${KEY}")
-                .build();
-        HeadObjectResponse headObjectResponse = s3.headObject(headObjectRequest);
 
-        System.out.println(headObjectResponse.contentType());
-
+        return ResponseEntity.ok(bucketObjects);
     }
 
 }
