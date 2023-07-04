@@ -17,8 +17,6 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:4200")
 public class ListBucketObjects {
 
-    @Value("${BUCKET}")
-    private String bucket;
 
     private final S3Service s3Service;
     public ListBucketObjects(S3Service s3Service) {
