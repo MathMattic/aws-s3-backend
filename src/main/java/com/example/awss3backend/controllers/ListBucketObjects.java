@@ -3,7 +3,6 @@ package com.example.awss3backend.controllers;
 import com.example.awss3backend.BucketObject;
 import com.example.awss3backend.services.S3Service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
