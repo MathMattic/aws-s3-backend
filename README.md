@@ -1,1 +1,1 @@
-# aws-s3-backend
+This is a REST API to interact with buckets and objects in AWS S3.
