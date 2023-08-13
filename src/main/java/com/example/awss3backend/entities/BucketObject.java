@@ -1,4 +1,4 @@
-package com.example.awss3backend;
+package com.example.awss3backend.entities;
 
 import jakarta.persistence.*;
 
