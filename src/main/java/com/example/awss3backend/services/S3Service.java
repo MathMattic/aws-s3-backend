@@ -5,11 +5,15 @@ import com.example.awss3backend.entities.BucketObject;
 import com.example.awss3backend.repositories.S3ObjectRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +22,9 @@ public class S3Service {
 
     @Value("${BUCKET}")
     private String bucket;
+
+    @Value("${KEY}")
+    private String key;
 
     S3ObjectRepository s3ObjectRepository;
     S3Client s3Client;
@@ -48,6 +55,51 @@ public class S3Service {
         return bucketObjects;
     } // end ListObjects()
 
+
+
+    public byte[] getObject(String keyz) {
+
+        GetObjectRequest objectRequest = GetObjectRequest.builder().key(keyz).bucket(bucket).build();
+        ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(objectRequest);
+        return objectBytes.asByteArray();
+
+    }
+
+    public String putObject(MultipartFile file) {
+
+        InputStream is = null;
+        try {
+            is = file.getInputStream();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucket).key(file.getOriginalFilename());
+        PutObjectRequest putObjectRequest = requestBuilder.build();
+        PutObjectResponse response = s3Client.putObject(putObjectRequest, software.amazon.awssdk.core.sync.RequestBody.fromInputStream(is, file.getSize()));
+
+        if (response.sdkHttpResponse().isSuccessful()) {
+            return "File uploaded successfully";
+        } else {
+            return "Upload failed: " + response.sdkHttpResponse().statusText().orElse("Unknown error");
+        }
+
+    }
+
+
+    public String deleteObject() {
+
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucket).key(key).build();
+
+        DeleteObjectResponse deleteObjectResponse = s3Client.deleteObject(deleteObjectRequest);
+
+        if (deleteObjectResponse.sdkHttpResponse().isSuccessful()) {
+            return "Object deleted successfully";
+        } else {
+            return "Delete failed: " + deleteObjectResponse.sdkHttpResponse().statusText().orElse("Unknown error");
+        }
+    }
 
 
 } // end class S3Service
