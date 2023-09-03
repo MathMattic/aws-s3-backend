@@ -13,14 +13,16 @@ public class BucketObject {
     private long size;
     private String lastModified;
     private String contentType;
+    private String eTag;
 
     protected BucketObject() {}
 
-    public BucketObject(String key, long size, String lastModified, String contentType) {
+    public BucketObject(String key, long size, String lastModified, String contentType, String eTag) {
         this.key = key;
         this.size = size;
         this.lastModified = lastModified;
         this.contentType = contentType;
+        this.eTag = eTag;
     }
 
     public void setId(Long id) {
@@ -61,6 +63,14 @@ public class BucketObject {
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public String geteTag() {
+        return eTag;
+    }
+
+    public void seteTag(String eTag) {
+        this.eTag = eTag;
     }
 
     @Override
