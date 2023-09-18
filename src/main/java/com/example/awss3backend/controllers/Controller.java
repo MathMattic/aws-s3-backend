@@ -9,13 +9,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:4200") // default for Angular testing.
@@ -30,30 +27,24 @@ public class Controller {
 
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/status")
-    public String status() {
+    public String status(@ModelAttribute("http-headers") String headers) {
+        System.out.println("the status header: " + headers);
         return "OK";
     }
 
-//<dependency>
-//    <groupId>org.springframework.boot</groupId>
-//    <artifactId>spring-boot-starter-thymeleaf</artifactId>
-//</dependency>
-    @GetMapping("/console")
+    @GetMapping("/console") //TODO Thymeleaf
     public Resource html() {
         return new ClassPathResource("static/console.html");
     }
 
     @GetMapping(path = "/", produces = json)
-    public ResponseEntity<List<BucketObject>> listBucketObjects(@RequestHeader Map<String, String> headers) {
-        System.out.println("listBucketObjects()");
-//        headers.forEach((key, value) -> System.out.printf("Header '%s' = %s", key, value));
-        System.out.println(headers.toString());
-        List<BucketObject> bucketObjects = s3Service.listBucketObjects();
+    public ResponseEntity<List<BucketObject>> listBucketObjects() {
+        List<BucketObject> bucketObjects = s3Service.listObjects();
         return ResponseEntity.ok(bucketObjects);
     }
 
     @GetMapping(path="/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<byte[]> downloadBucketObject(@RequestParam String key) { // or RequestHeader for the custom HTTP header
+    public ResponseEntity<byte[]> downloadBucketObject(@RequestParam String key) {
         System.out.println("downloadBucketObject()");
         HttpHeaders headers = new HttpHeaders();
 
@@ -62,7 +53,6 @@ public class Controller {
 
         return ResponseEntity.ok().headers(headers).body(object);
     }
-
 
     @PostMapping(path="/", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadBucketObject(@RequestPart("file") MultipartFile file, @RequestParam("shouldEncrypt") boolean encrypt) {
@@ -90,7 +80,5 @@ public class Controller {
     public ResponseEntity<String> patchBucketObject() {
         return ResponseEntity.noContent().build();
     }
-
-
 
 }

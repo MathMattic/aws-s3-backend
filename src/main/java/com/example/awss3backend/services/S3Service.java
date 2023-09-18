@@ -2,6 +2,8 @@ package com.example.awss3backend.services;
 
 import com.example.awss3backend.entities.BucketObject;
 import com.example.awss3backend.repositories.S3ObjectRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,11 +23,10 @@ import static software.amazon.awssdk.core.sync.RequestBody.fromInputStream;
 @Service
 public class S3Service {
 
+    private static final Logger logger = LoggerFactory.getLogger(S3Service.class);
+
     @Value("${BUCKET}")
     private String bucket;
-
-    @Value("${KEY}")
-    private String key;
 
     S3ObjectRepository s3ObjectRepository;
     S3Client s3Client;
@@ -36,7 +37,8 @@ public class S3Service {
         this.s3Client = S3Client.builder().credentialsProvider(credentialsProvider).region(Region.US_EAST_1).build();
     }
 
-    public List<BucketObject> listBucketObjects() {
+    public List<BucketObject> listObjects() {
+
         ListObjectsV2Request listObjects = ListObjectsV2Request.builder().bucket(bucket).build();
         ListObjectsV2Response response = s3Client.listObjectsV2(listObjects);
         List<S3Object> s3objects = response.contents();
