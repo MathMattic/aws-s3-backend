@@ -25,7 +25,7 @@ public class S3Service {
 
     private static final Logger logger = LoggerFactory.getLogger(S3Service.class);
 
-    @Value("${BUCKET}")
+    @Value("${BUCKET}") // local run configuration value
     private String bucket;
 
     S3ObjectRepository s3ObjectRepository;
@@ -38,7 +38,6 @@ public class S3Service {
     }
 
     public List<BucketObject> listObjects() {
-
         ListObjectsV2Request listObjects = ListObjectsV2Request.builder().bucket(bucket).build();
         ListObjectsV2Response response = s3Client.listObjectsV2(listObjects);
         List<S3Object> s3objects = response.contents();
@@ -64,7 +63,7 @@ public class S3Service {
         try (InputStream is = file.getInputStream()) {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucket).key(file.getOriginalFilename()).build();
             response = s3Client.putObject(putObjectRequest, fromInputStream(is, file.getSize()));
-            return response.sdkHttpResponse().statusText().orElse("???");
+            return file.getOriginalFilename(); // response.sdkHttpResponse().statusText();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -73,8 +72,7 @@ public class S3Service {
     public String deleteObject(String key) {
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucket).key(key).build();
         DeleteObjectResponse deleteObjectResponse = s3Client.deleteObject(deleteObjectRequest);
-        System.out.println(deleteObjectResponse.toString());
-        return "Deleted " + key;
+        return key;
     }
 
 } // end class S3Service
