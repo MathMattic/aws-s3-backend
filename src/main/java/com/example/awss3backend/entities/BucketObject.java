@@ -5,17 +5,14 @@ import jakarta.persistence.*;
 @Entity
 public class BucketObject {
 
-    @Id
-    @GeneratedValue(strategy= GenerationType.AUTO)
-    private Long id;
-
-    private String key;
+//    @GeneratedValue(strategy= GenerationType.AUTO)
+    @Id private String key;
     private long size;
     private String lastModified;
     private String contentType;
     private String eTag;
 
-    protected BucketObject() {}
+    public BucketObject() {}
 
     public BucketObject(String key, long size, String lastModified, String contentType, String eTag) {
         this.key = key;
@@ -23,14 +20,6 @@ public class BucketObject {
         this.lastModified = lastModified;
         this.contentType = contentType;
         this.eTag = eTag;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public String getKey() {
@@ -76,7 +65,6 @@ public class BucketObject {
     @Override
     public String toString() {
         return "BucketObject{" +
-                "id=" + id +
                 ", key='" + key + '\'' +
                 ", size=" + size +
                 ", lastModified='" + lastModified + '\'' +

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -58,12 +59,15 @@ public class S3Service {
         return objectBytes.asByteArray();
     }
 
-    public String putObject(MultipartFile file) {
+    public BucketObject putObject(MultipartFile file) {
         PutObjectResponse response;
         try (InputStream is = file.getInputStream()) {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucket).key(file.getOriginalFilename()).build();
             response = s3Client.putObject(putObjectRequest, fromInputStream(is, file.getSize()));
-            return file.getOriginalFilename(); // response.sdkHttpResponse().statusText();
+            logger.info("PutObjectResponse was: {}", response);
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket(bucket).key(file.getOriginalFilename()).build();
+            HeadObjectResponse headObjectResponse = s3Client.headObject(headObjectRequest);
+            return s3ObjectRepository.save(new BucketObject(file.getOriginalFilename(), headObjectResponse.contentLength(), headObjectResponse.lastModified().toString(), headObjectResponse.contentType(), headObjectResponse.eTag()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -72,7 +76,13 @@ public class S3Service {
     public String deleteObject(String key) {
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucket).key(key).build();
         DeleteObjectResponse deleteObjectResponse = s3Client.deleteObject(deleteObjectRequest);
-        return key;
+        s3ObjectRepository.deleteById(key);
+        return key + " deleted.";
+    }
+
+    public List<BucketObject> find() {
+//        Long x = s3ObjectRepository.deleteByKey("test.txt");
+        return s3ObjectRepository.findByContentTypeAndSizeGreaterThan("application/octet-stream", 20L);
     }
 
 } // end class S3Service

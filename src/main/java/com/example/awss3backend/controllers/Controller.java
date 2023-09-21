@@ -4,6 +4,7 @@ import com.example.awss3backend.entities.BucketObject;
 import com.example.awss3backend.services.S3Service;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -32,8 +33,9 @@ public class Controller {
 
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/status")
-    public String status(HttpServletRequest request) {
-        return request.getAttribute("custom-key").toString();
+    public ResponseEntity<List<BucketObject>> status(HttpServletRequest request) {
+        return ResponseEntity.ok(s3Service.find());
+//        return request.getAttribute("custom-key").toString();
     }
 
     @GetMapping("/console") //TODO Thymeleaf
@@ -53,12 +55,11 @@ public class Controller {
         logger.info("@GetMapping for '/download' , key was {}.", key);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""+key+"\"");
-        byte[] object = s3Service.getObject(key);
-        return ResponseEntity.ok().headers(headers).body(object);
+        return ResponseEntity.ok().headers(headers).body(s3Service.getObject(key));
     }
 
     @PostMapping(path="/", produces = json, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadBucketObject(@RequestPart("file") MultipartFile file, @RequestParam("encrypt") boolean encrypt) {
+    public ResponseEntity<BucketObject> uploadBucketObject(@RequestPart("file") MultipartFile file, @RequestParam("encrypt") boolean encrypt) {
         logger.info("@PostMapping for '/' , encrypt was: {}. file was: {} , with content-type: {}.", encrypt, file.getOriginalFilename(), file.getContentType());
         return ResponseEntity.ok(s3Service.putObject(file));
     }
