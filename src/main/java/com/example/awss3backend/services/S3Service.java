@@ -26,7 +26,7 @@ public class S3Service {
 
     private static final Logger logger = LoggerFactory.getLogger(S3Service.class);
 
-    @Value("${BUCKET}") // local run configuration value
+    @Value("${BUCKET}") // local run configuration value // TODO: DB map value
     private String bucket;
 
     S3ObjectRepository s3ObjectRepository;
@@ -39,6 +39,7 @@ public class S3Service {
     }
 
     public List<BucketObject> listObjects() {
+        System.out.println(s3Client.listBuckets()); // TODO
         ListObjectsV2Request listObjects = ListObjectsV2Request.builder().bucket(bucket).build();
         ListObjectsV2Response response = s3Client.listObjectsV2(listObjects);
         List<S3Object> s3objects = response.contents();
@@ -46,8 +47,8 @@ public class S3Service {
         List<BucketObject> bucketObjects = new ArrayList<>();
         for (S3Object objectInfo : s3objects) {
             HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket(bucket).key(objectInfo.key()).build();
-            HeadObjectResponse headObjectResponse = s3Client.headObject(headObjectRequest);
-            bucketObjects.add(new BucketObject(objectInfo.key(), objectInfo.size(), objectInfo.lastModified().toString(), headObjectResponse.contentType(), objectInfo.eTag()));
+            HeadObjectResponse headObjRes = s3Client.headObject(headObjectRequest);
+            bucketObjects.add(new BucketObject(objectInfo.key(), objectInfo.size(), objectInfo.lastModified().toString(), headObjRes.contentType(), objectInfo.eTag()));
         }
         s3ObjectRepository.saveAll(bucketObjects);
         return bucketObjects;
@@ -60,14 +61,15 @@ public class S3Service {
     }
 
     public BucketObject putObject(MultipartFile file) {
-        PutObjectResponse response;
+        String fileName = file.getOriginalFilename();
+        PutObjectResponse response; // TODO: DB map response. returns eTag and ServerSideEncryption
         try (InputStream is = file.getInputStream()) {
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucket).key(file.getOriginalFilename()).build();
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucket).key(fileName).contentType(file.getContentType()).build();
             response = s3Client.putObject(putObjectRequest, fromInputStream(is, file.getSize()));
             logger.info("PutObjectResponse was: {}", response);
-            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket(bucket).key(file.getOriginalFilename()).build();
-            HeadObjectResponse headObjectResponse = s3Client.headObject(headObjectRequest);
-            return s3ObjectRepository.save(new BucketObject(file.getOriginalFilename(), headObjectResponse.contentLength(), headObjectResponse.lastModified().toString(), headObjectResponse.contentType(), headObjectResponse.eTag()));
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket(bucket).key(fileName).build();
+            HeadObjectResponse headObjRes = s3Client.headObject(headObjectRequest);
+            return s3ObjectRepository.save(new BucketObject(fileName, headObjRes.contentLength(), headObjRes.lastModified().toString(), file.getContentType(), headObjRes.eTag()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -75,7 +77,7 @@ public class S3Service {
 
     public String deleteObject(String key) {
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucket).key(key).build();
-        DeleteObjectResponse deleteObjectResponse = s3Client.deleteObject(deleteObjectRequest);
+        s3Client.deleteObject(deleteObjectRequest).deleteMarker();
         s3ObjectRepository.deleteById(key);
         return key + " deleted.";
     }

@@ -2,9 +2,7 @@ package com.example.awss3backend.controllers;
 
 import com.example.awss3backend.entities.BucketObject;
 import com.example.awss3backend.services.S3Service;
-
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -46,19 +44,16 @@ public class Controller {
     @GetMapping(path = "/", produces = json)
     public ResponseEntity<List<BucketObject>> listBucketObjects() {
         logger.info("@GetMapping for '/' .");
-        List<BucketObject> bucketObjects = s3Service.listObjects();
-        return ResponseEntity.ok(bucketObjects);
+        return ResponseEntity.ok(s3Service.listObjects());
     }
 
     @GetMapping(path="/download", produces = json)
     public ResponseEntity<byte[]> downloadBucketObject(@RequestParam String key) {
         logger.info("@GetMapping for '/download' , key was {}.", key);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""+key+"\"");
-        return ResponseEntity.ok().headers(headers).body(s3Service.getObject(key));
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""+key+"\"").body(s3Service.getObject(key));
     }
 
-    @PostMapping(path="/", produces = json, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(path="/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BucketObject> uploadBucketObject(@RequestPart("file") MultipartFile file, @RequestParam("encrypt") boolean encrypt) {
         logger.info("@PostMapping for '/' , encrypt was: {}. file was: {} , with content-type: {}.", encrypt, file.getOriginalFilename(), file.getContentType());
         return ResponseEntity.ok(s3Service.putObject(file));
